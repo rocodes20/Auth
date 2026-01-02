@@ -1,5 +1,5 @@
 import pymysql
-
+from core.security import hash_password,verify_password
 def register_user(user,db):
     try:
     
@@ -8,8 +8,9 @@ def register_user(user,db):
             existing_user = cursor.fetchone()
             if existing_user:
                 raise LookupError("Email already exists")
-            
-            cursor.execute("INSERT INTO users (name,email,password) VALUES (%s,%s,%s)",(user.name,user.email,user.password))
+            hashed_password = hash_password(user.password)
+
+            cursor.execute("INSERT INTO users (name,email,password) VALUES (%s,%s,%s)",(user.name,user.email,hashed_password))
             db.commit()
             return {
                 "message":"user registered successfully"
@@ -29,8 +30,9 @@ def login_user(user,db):
                 raise ValueError("invalid email or password")
             db_password = loginuser["password"]
 
-            if user.password.strip() != db_password :
-                raise ValueError("invalid email or password")
+            if not verify_password(user.password, db_password):
+              raise ValueError("invalid email or password")
+
             return{
                 "message":"login successfull",
                 "user_id": loginuser["id"],
